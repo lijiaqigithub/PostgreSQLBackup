@@ -8,12 +8,12 @@ namespace PostgreSQLBackup
 {
     public class PgDump
     {
-        public string pgDumpPath;
-        public string password;
-        public string host;
-        public string port;
-        public string username;
-        public string path;
-        public string dbname;
+        public string pgDumpPath { get; set; }
+        public string password { get; set; }
+        public string host { get; set; }
+        public string port { get; set; }
+        public string username { get; set; }
+        public string path { get; set; }
+        public string dbname { get; set; }
     }
 }

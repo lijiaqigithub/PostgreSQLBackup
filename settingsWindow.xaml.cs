@@ -56,7 +56,6 @@ namespace PostgreSQLBackup
             {
                 MessageBox.Show("FILEPATH CAN'T BE EMPTY");
             }
-
         }   
 
         private void LoadSettings()
