@@ -6,12 +6,12 @@
         xmlns:local="clr-namespace:PostgreSQLBackup"
         mc:Ignorable="d"
         Loaded="onLoad"
-        Title="SETTINGS" Height="460" Width="400">
+        Title="SETTINGS" Height="502" Width="400">
     <StackPanel Margin="0,0,0,0">
         <Label Content="PG__DUMP file path" HorizontalAlignment="Center"/>
         <Button x:Name="pgdumpFilePathButton" Content="Selecteaza fisier" Click="pgdumpFilePathButton_Click" Background="LightGray" Height="auto" Width="150"/>
-        <Label Content="DBNAME" HorizontalAlignment="Center" Margin="0, 20, 0, 0"/>
-        <TextBox x:Name="dbnameTextbox" HorizontalAlignment="Center" TextAlignment="Center" TextChanged="dbnameTextbox_TextChanged"  BorderBrush="Gray" Width="150"/>
+        <Label Content="DB NAMES" HorizontalAlignment="Center" Margin="0, 20, 0, 0"/>
+        <TextBox x:Name="dbnamesTextbox"  HorizontalAlignment="Center" TextChanged="dbnamesTextbox_TextChanged"  BorderBrush="Gray" Width="150" Height="45" TextWrapping="Wrap"/>
         <Label Content="HOST" HorizontalAlignment="Center" Margin="0, 20, 0, 0"/>
         <TextBox x:Name="hostTextbox" HorizontalAlignment="Center" TextAlignment="Center" TextChanged="hostTextbox_TextChanged" BorderBrush="Gray" Width="150"/>
         <Label Content="PORT" HorizontalAlignment="Center" Margin="0, 20, 0, 0"/>

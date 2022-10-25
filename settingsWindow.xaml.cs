@@ -62,7 +62,7 @@ namespace PostgreSQLBackup
         {
             lastDirectory = MainWindow.pgDumpPath;
             pgdumpFilePathButton.ToolTip = lastDirectory;
-            dbnameTextbox.Text = MainWindow.dbname;
+            dbnamesTextbox.Text = MainWindow.dbnames;
             hostTextbox.Text = MainWindow.host;
             portTextbox.Text = MainWindow.port;
             userTextbox.Text = MainWindow.user;
@@ -75,7 +75,7 @@ namespace PostgreSQLBackup
             {
                 writer.WriteStartElement("settings");
                 writer.WriteElementString("pgDumpPath", lastDirectory);
-                writer.WriteElementString("dbName", dbnameTextbox.Text);
+                writer.WriteElementString("dbNames", dbnamesTextbox.Text);
                 writer.WriteElementString("host", hostTextbox.Text);
                 writer.WriteElementString("port", portTextbox.Text);
                 writer.WriteElementString("user", userTextbox.Text);
@@ -121,10 +121,10 @@ namespace PostgreSQLBackup
             passwordTextbox.BorderThickness = new Thickness(1.0);
         }
 
-        private void dbnameTextbox_TextChanged(object sender, TextChangedEventArgs e)
+        private void dbnamesTextbox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            dbnameTextbox.BorderBrush = Brushes.Gray;
-            dbnameTextbox.BorderThickness = new Thickness(1.0);
+            dbnamesTextbox.BorderBrush = Brushes.Gray;
+            dbnamesTextbox.BorderThickness = new Thickness(1.0);
         }
 
         private bool errorDesign()
@@ -160,10 +160,10 @@ namespace PostgreSQLBackup
                 passwordTextbox.BorderThickness = new Thickness(2.0);
                 notOk = true;
             }
-            if (string.IsNullOrEmpty(dbnameTextbox.Text))
+            if (string.IsNullOrEmpty(dbnamesTextbox.Text))
             {
-                dbnameTextbox.BorderBrush = Brushes.Red;
-                dbnameTextbox.BorderThickness = new Thickness(2.0);
+                dbnamesTextbox.BorderBrush = Brushes.Red;
+                dbnamesTextbox.BorderThickness = new Thickness(2.0);
                 notOk = true;
             }
 

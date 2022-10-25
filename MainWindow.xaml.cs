@@ -39,7 +39,7 @@ namespace PostgreSQLBackup
 
         public static string pgDumpPath,
                              host,
-                             dbname,
+                             dbnames,
                              port,
                              user,
                              password;
@@ -66,27 +66,38 @@ namespace PostgreSQLBackup
             pgObject.host = host;
             pgObject.port = port;
             pgObject.username = user;
-            pgObject.dbname = dbname;
 
-            if(string.IsNullOrEmpty(backupFileNameTextbox.Text))
+            
+            var dbnamesArray = dbnames.Split(' ');
+
+            foreach(var dbname in dbnamesArray)
             {
-                MessageBox.Show("Alege numele fisierului backup");
-                backupButton.IsEnabled = true;
-                return;
-            } else
-            {
-                if (string.IsNullOrEmpty(backupFilePath))
-                {
-                    pgObject.path = backupFileNameTextbox.Text;
-                }
-                else
-                {
-                    pgObject.path = backupFilePath + "\\" + backupFileNameTextbox.Text;
-                }
+                Console.WriteLine(dbname);
+                pgObject.dbname = dbname;
+                pgObject.path = backupFilePath + "\\" + dbname + "backup";
+
+                PostgreSqlDump(pgObject);
+                
             }
 
-            Thread thread = new Thread(() => PostgreSqlDump(pgObject));
-            thread.Start();
+
+
+            //if(string.IsNullOrEmpty(backupFileNameTextbox.Text))
+            //{
+            //    MessageBox.Show("Alege numele fisierului backup");
+            //    backupButton.IsEnabled = true;
+            //    return;
+            //} else
+            //{
+            //    if (string.IsNullOrEmpty(backupFilePath))
+            //    {
+            //        pgObject.path = backupFileNameTextbox.Text;
+            //    }
+            //    else
+            //    {
+            //        pgObject.path = backupFilePath + "\\" + backupFileNameTextbox.Text;
+            //    }
+            //}
         }
 
         private void openFileExplorerButton_Click(object sender, RoutedEventArgs e)
@@ -118,7 +129,7 @@ namespace PostgreSQLBackup
 
             reader.ReadToFollowing("pgDumpPath");
             pgDumpPath = reader.ReadElementContentAsString();
-            dbname = reader.ReadElementContentAsString();
+            dbnames = reader.ReadElementContentAsString();
             host = reader.ReadElementContentAsString();
             port = reader.ReadElementContentAsString();
             user = reader.ReadElementContentAsString();
@@ -126,7 +137,7 @@ namespace PostgreSQLBackup
 
             reader.Dispose();
         }
-
+        
         public void PostgreSqlDump(PgDump pgObj)
         {
             String dumpCommand = "\"" + pgObj.pgDumpPath + "\"" + " -Fc" + " -h " + pgObj.host + " -p " + pgObj.port + " -d " + pgObj.dbname + " -U " + pgObj.username + "";
@@ -171,7 +182,7 @@ namespace PostgreSQLBackup
             }
             catch(Exception ex)
             {
-                System.Windows.MessageBox.Show("Eroare la crearea fisierului: " + ex.Message);
+                MessageBox.Show("Eroare la crearea fisierului: " + ex.Message);
             }
             finally
             {
@@ -181,12 +192,13 @@ namespace PostgreSQLBackup
                 if (File.Exists(passFilePath))
                     File.Delete(passFilePath);
 
-                Dispatcher.Invoke(new Action(() => 
+                Dispatcher.Invoke(new Action(() =>
                 {
                     backupButton.IsEnabled = true;
-                    MessageBox.Show("Fisier salvat cu succes!");
+                    MessageBox.Show("Fisier " + pgObj.dbname + "backup" + " salvat cu succes!");
                 }));
 
+                //Thread.Sleep(1000 * 2);
             }
         }
 
