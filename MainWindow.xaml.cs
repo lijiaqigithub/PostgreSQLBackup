@@ -179,7 +179,58 @@ namespace PostgreSQLBackup
                     File.Delete(passFilePath);
             }
         }
-
+        public static string CMDWithResponse(string Comanda, string compiler = "cmd")
+        {
+                string CMDcuRSP = "";
+                try
+                {
+                    Process myprocess = new Process();
+                    myprocess.StartInfo.FileName = compiler;
+                    myprocess.StartInfo.RedirectStandardInput = true;
+                    myprocess.StartInfo.RedirectStandardOutput = true;
+                    myprocess.StartInfo.UseShellExecute = false;
+                    myprocess.StartInfo.CreateNoWindow = true;
+                    myprocess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    myprocess.Start();
+                    System.IO.StreamReader SR = myprocess.StandardOutput;
+                    System.IO.StreamWriter SW = myprocess.StandardInput;
+                    SW.WriteLine(Comanda);
+                    SW.WriteLine("exit" + (char)(13));
+                    CMDcuRSP = (SR.ReadToEnd());
+                    SW.Close();
+                    SR.Close();
+                    myprocess.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    CMDcuRSP = "ERROR";
+                }
+                return CMDcuRSP;
+        }
+        
+        public void TaskScheduler_Task()
+        {
+            string result = CMDWithResponse("schtasks /query");
+            if (!result.Contains("'PostgreTask'"))
+            {
+                CMDWithResponse(@"schtasks /create /sc daily /mo 1 /tn BackupPostgres /tr """ + System.Reflection.Assembly.GetEntryAssembly().Location + " argument=nodesign\"");
+            }
+        }
+        public void EndProcess()
+        {
+            Process[] p = Process.GetProcessesByName("");
+            if (p.Length > 1)
+            {
+                Environment.Exit(0);
+            }
+        }
+        public void KillProcessWhatever()
+        {
+            foreach (var process in Process.GetProcessesByName(""))
+            {
+                process.Kill();
+            }
+        }
     }
 }
         
