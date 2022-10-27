@@ -34,7 +34,6 @@ namespace PostgreSQLBackup
         {
             var path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
             path = path.Substring(6);
-            MessageBox.Show(path);
 
             this.Visibility = Visibility.Collapsed;
             if (File.Exists(path + "\\" + xmlName + ".xml"))
