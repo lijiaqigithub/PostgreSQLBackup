@@ -32,8 +32,12 @@ namespace PostgreSQLBackup
 
         void onLoad(object sender, RoutedEventArgs e)
         {
-            //this.Visibility = Visibility.Collapsed;
-            if (File.Exists(xmlName + ".xml"))
+            var path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
+            path = path.Substring(6);
+            MessageBox.Show(path);
+
+            this.Visibility = Visibility.Collapsed;
+            if (File.Exists(path + "\\" + xmlName + ".xml"))
             {
                 Thread t = new Thread(new ThreadStart(AppThread));
                 t.Start();
@@ -75,7 +79,10 @@ namespace PostgreSQLBackup
 
         private void ReadData()
         {
-            var reader = XmlReader.Create(xmlName + ".xml");
+            var path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
+            path = path.Substring(6);
+
+            var reader = XmlReader.Create(path + "\\" + xmlName + ".xml");
 
             reader.ReadToFollowing("pgDumpPath");
             pgDumpPath = reader.ReadElementContentAsString();
@@ -91,7 +98,6 @@ namespace PostgreSQLBackup
             user = reader.ReadElementContentAsString();
             reader.ReadToFollowing("password");
             password = reader.ReadElementContentAsString();
-
             reader.Dispose();
         }
 
@@ -227,7 +233,7 @@ namespace PostgreSQLBackup
             string result = CMDWithResponse("schtasks /query");
             if (!result.Contains("'BackupPostgre'"))
             {
-                CMDWithResponse(@"schtasks /create /sc hourly /tn BackupPostgres /tr """ + System.Reflection.Assembly.GetEntryAssembly().Location + " argument=nodesign\"");
+                CMDWithResponse(@"schtasks /create /sc hourly /tn BackupPostgres /tr """ + System.Reflection.Assembly.GetEntryAssembly().Location+ " argument=nodesign\"");
             }
         }
         public void EndProcess(string process)
