@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:PostgreSQLBackup"
         mc:Ignorable="d"
         Loaded="onLoad"
-        Title="Backup Postgre Database" Height="200" Width="400">
+        Title="Backup Postgre Database" Height="100" Width="100">
     <Grid>
-        <Button Grid.Column="0" Grid.Row="1" x:Name="backupButton" Content="Creare fisier backup" Height="50" Width="150" Click="backupButton_Click"></Button>
+        
     </Grid>
 </Window>

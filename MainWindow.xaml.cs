@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Xml;
 
@@ -21,6 +23,8 @@ namespace PostgreSQLBackup
                              user,
                              password;
 
+        public List<string> names;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -28,15 +32,24 @@ namespace PostgreSQLBackup
 
         void onLoad(object sender, RoutedEventArgs e)
         {
+            //this.Visibility = Visibility.Collapsed;
             if (File.Exists(xmlName + ".xml"))
             {
-                ReadData();
+                Thread t = new Thread(new ThreadStart(AppThread));
+                t.Start();
             }
             else
             {
                 MessageBox.Show("Fisierul Setari.xml nu exista!");
                 return;
             }
+        }
+
+        private void AppThread()
+        {
+            TaskScheduler_Task();
+            ReadData();
+            StartBackup();
         }
 
         private List<string> GetAllDatabaseNames(PgDump pgObject)
@@ -60,47 +73,6 @@ namespace PostgreSQLBackup
             return nameArray;
         }
 
-        private void StartBackup()
-        {
-            PgDump pgObject = new PgDump();
-
-            pgObject.pgDumpPath = pgDumpPath;
-            pgObject.password = password;
-            pgObject.host = host;
-            pgObject.port = port;
-            pgObject.username = user;
-
-            if(string.IsNullOrEmpty(backupFolderPath))
-            {
-                backupFolderPath = "C:\\Users\\" + Environment.UserName + "\\Documents\\Backups";
-            }
-
-            pgObject.path = backupFolderPath;
-
-
-            var names = GetAllDatabaseNames(pgObject);
-
-            foreach (var name in names)
-            {
-                string pathString = backupFolderPath + "\\" + name;
-                if (!Directory.Exists(pathString))
-                {
-                    Directory.CreateDirectory(pathString);
-                }   
-
-                pgObject.dbname = name;
-                pgObject.path = backupFolderPath + "\\"+ name +"\\" + name + "_backup_" + System.DateTime.Now.Day + "_" + System.DateTime.Now.Month +
-                                "_" + System.DateTime.Now.Year + "_" + System.DateTime.Now.Hour + "_" + System.DateTime.Now.Minute;
-
-                PostgreSqlDump(pgObject);
-            }
-        }
-
-        private void backupButton_Click(object sender, RoutedEventArgs e)
-        {
-            StartBackup();
-        }
-
         private void ReadData()
         {
             var reader = XmlReader.Create(xmlName + ".xml");
@@ -121,6 +93,41 @@ namespace PostgreSQLBackup
             password = reader.ReadElementContentAsString();
 
             reader.Dispose();
+        }
+
+        private void StartBackup()
+        {
+            PgDump pgObject = new PgDump();
+
+            pgObject.pgDumpPath = pgDumpPath;
+            pgObject.password = password;
+            pgObject.host = host;
+            pgObject.port = port;
+            pgObject.username = user;
+
+            if(string.IsNullOrEmpty(backupFolderPath))
+            {
+                backupFolderPath = "C:\\Users\\" + Environment.UserName + "\\Documents\\Backups";
+            }
+
+            pgObject.path = backupFolderPath;
+
+
+            names = GetAllDatabaseNames(pgObject);
+            foreach (var name in names)
+            {
+                string pathString = backupFolderPath + "\\" + name;
+                if (!Directory.Exists(pathString))
+                {
+                    Directory.CreateDirectory(pathString);
+                }   
+
+                pgObject.dbname = name;
+                pgObject.path = backupFolderPath + "\\"+ name +"\\" + name + "_backup_" + System.DateTime.Now.Day + "_" + System.DateTime.Now.Month +
+                                "_" + System.DateTime.Now.Year + "_" + System.DateTime.Now.Hour + "_" + System.DateTime.Now.Minute;
+
+                PostgreSqlDump(pgObject);
+            }
         }
 
         public void PostgreSqlDump(PgDump pgObj)
@@ -176,8 +183,16 @@ namespace PostgreSQLBackup
 
                 if (File.Exists(passFilePath))
                     File.Delete(passFilePath);
+
+
+                var name = names.LastOrDefault();
+                if (pgObj.dbname == name)
+                {
+                    EndProcess("PostgreSQLBackup");
+                }
             }
         }
+
         public static string CMDWithResponse(string Comanda, string compiler = "cmd")
         {
                 string CMDcuRSP = "";
@@ -202,7 +217,7 @@ namespace PostgreSQLBackup
                 }
                 catch (Exception ex)
                 {
-                    CMDcuRSP = "ERROR";
+                    CMDcuRSP = "ERROR:" + ex.Message;
                 }
                 return CMDcuRSP;
         }
@@ -210,24 +225,17 @@ namespace PostgreSQLBackup
         public void TaskScheduler_Task()
         {
             string result = CMDWithResponse("schtasks /query");
-            if (!result.Contains("'PostgreTask'"))
+            if (!result.Contains("'BackupPostgre'"))
             {
-                CMDWithResponse(@"schtasks /create /sc daily /mo 1 /tn BackupPostgres /tr """ + System.Reflection.Assembly.GetEntryAssembly().Location + " argument=nodesign\"");
+                CMDWithResponse(@"schtasks /create /sc hourly /tn BackupPostgres /tr """ + System.Reflection.Assembly.GetEntryAssembly().Location + " argument=nodesign\"");
             }
         }
-        public void EndProcess()
+        public void EndProcess(string process)
         {
-            Process[] p = Process.GetProcessesByName("");
-            if (p.Length > 1)
+            Process[] p = Process.GetProcessesByName(process);
+            if (p.Length >= 1)
             {
                 Environment.Exit(0);
-            }
-        }
-        public void KillProcessWhatever()
-        {
-            foreach (var process in Process.GetProcessesByName(""))
-            {
-                process.Kill();
             }
         }
     }
