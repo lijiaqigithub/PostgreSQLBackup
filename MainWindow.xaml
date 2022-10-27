@@ -8,22 +8,6 @@
         Loaded="onLoad"
         Title="Backup Postgre Database" Height="200" Width="400">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="352"/>
-            <ColumnDefinition Width="auto"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-        </Grid.RowDefinitions>
-        <Label Grid.Row="0" Grid.Column="0" Content="Nume fisier backup:" Margin="0, 8, 0, 0"/>
-        <TextBox Grid.Row="0" Grid.Column="0" x:Name="backupFileNameTextbox" VerticalContentAlignment="Center" Width="350" Height="30" Margin="2, 30, 0, 10"/>
-        <Button Grid.Column="1" Grid.Row="0" x:Name="openFileExplorerButton" Click="openFileExplorerButton_Click"  Background="White" BorderThickness="1"  Width="30" Height="30" Margin="0, 30, 0, 10">
-            <Image Source="/folderImage.png"/>
-        </Button>
-        <Button Grid.Column="0" Grid.Row="1" x:Name="backupButton" Content="Creare fisier backup" Height="50" Width="150" Click="backupButton_Click" Margin="48, -50, 0, 0"/>
-        <Button Grid.Column="1" Grid.Row="1" x:Name="settingsButton" Click="settingsButton_Click" Height="40" Width="40" Margin="-10, 50, 0, 0">
-            <Image Source="/settingsImage.png"/>
-        </Button>
+        <Button Grid.Column="0" Grid.Row="1" x:Name="backupButton" Content="Creare fisier backup" Height="50" Width="150" Click="backupButton_Click"></Button>
     </Grid>
 </Window>

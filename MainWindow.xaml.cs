@@ -1,45 +1,23 @@
-﻿using Microsoft.Win32;
-using Microsoft.WindowsAPICodePack.Dialogs;
+﻿using Microsoft.WindowsAPICodePack.Dialogs;
 using Npgsql;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Xml;
 
 namespace PostgreSQLBackup
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    /// 
-
     public partial class MainWindow : Window
     {
         private string xmlName = "settings";
 
-        public string backupFilePath = "";
-
         public static string pgDumpPath,
+                             backupFolderPath,
                              host,
-                             dbnames,
+                             dbname,
                              port,
                              user,
                              password;
@@ -51,14 +29,40 @@ namespace PostgreSQLBackup
 
         void onLoad(object sender, RoutedEventArgs e)
         {
-            if(File.Exists(xmlName + ".xml"))
+            if (File.Exists(xmlName + ".xml"))
+            {
                 ReadData();
+            }
+            else
+            {
+                MessageBox.Show("Fisierul Setari.xml nu exista!");
+                return;
+            }
         }
 
-        private void backupButton_Click(object sender, RoutedEventArgs e)
+        private List<string> GetAllDatabaseNames(PgDump pgObject)
         {
-            backupButton.IsEnabled = false;
+            var cs = "Host=" + pgObject.host + ";Username=" + pgObject.username +";Password="+ pgObject.password +";Database=" +pgObject.dbname;
 
+            var con = new NpgsqlConnection(cs);
+            con.Open();
+
+            var sql = "SELECT datname FROM pg_database WHERE datistemplate = false;";
+
+            var cmd = new NpgsqlCommand(sql, con);
+
+            var names = cmd.ExecuteReader();
+            var nameArray = new List<string>();
+            while(names.Read())
+            {
+                nameArray.Add(names[0].ToString());
+            }
+            
+            return nameArray;
+        }
+
+        private void StartBackup()
+        {
             PgDump pgObject = new PgDump();
 
             pgObject.pgDumpPath = pgDumpPath;
@@ -67,60 +71,35 @@ namespace PostgreSQLBackup
             pgObject.port = port;
             pgObject.username = user;
 
-            
-            var dbnamesArray = dbnames.Split(' ');
-
-            foreach(var dbname in dbnamesArray)
+            if(string.IsNullOrEmpty(backupFolderPath))
             {
-                Console.WriteLine(dbname);
-                pgObject.dbname = dbname;
-                pgObject.path = backupFilePath + "\\" + dbname + "backup";
+                backupFolderPath = "C:\\Users\\" + Environment.UserName + "\\Documents\\Backups";
+            }
+
+            pgObject.path = backupFolderPath;
+
+
+            var names = GetAllDatabaseNames(pgObject);
+
+            foreach (var name in names)
+            {
+                string pathString = backupFolderPath + "\\" + name;
+                if (!Directory.Exists(pathString))
+                {
+                    Directory.CreateDirectory(pathString);
+                }   
+
+                pgObject.dbname = name;
+                pgObject.path = backupFolderPath + "\\"+ name +"\\" + name + "_backup_" + System.DateTime.Now.Day + "_" + System.DateTime.Now.Month +
+                                "_" + System.DateTime.Now.Year + "_" + System.DateTime.Now.Hour + "_" + System.DateTime.Now.Minute;
 
                 PostgreSqlDump(pgObject);
-                
-            }
-
-
-
-            //if(string.IsNullOrEmpty(backupFileNameTextbox.Text))
-            //{
-            //    MessageBox.Show("Alege numele fisierului backup");
-            //    backupButton.IsEnabled = true;
-            //    return;
-            //} else
-            //{
-            //    if (string.IsNullOrEmpty(backupFilePath))
-            //    {
-            //        pgObject.path = backupFileNameTextbox.Text;
-            //    }
-            //    else
-            //    {
-            //        pgObject.path = backupFilePath + "\\" + backupFileNameTextbox.Text;
-            //    }
-            //}
-        }
-
-        private void openFileExplorerButton_Click(object sender, RoutedEventArgs e)
-        {
-            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
-            dialog.InitialDirectory = "C:\\Users";
-            dialog.IsFolderPicker = true;
-            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
-            {
-                backupFilePath = dialog.FileName;
-            } else
-            {
-                MessageBox.Show("Alege locatie de salvare (Default: /bin)");
             }
         }
-        private void settingsButton_Click(object sender, RoutedEventArgs e)
+
+        private void backupButton_Click(object sender, RoutedEventArgs e)
         {
-            settingsWindow settingsWindow = new settingsWindow();
-            this.Hide();
-            settingsWindow.ShowDialog();
-            if (File.Exists(xmlName + ".xml"))
-                ReadData();
-            this.Show();
+            StartBackup();
         }
 
         private void ReadData()
@@ -129,15 +108,22 @@ namespace PostgreSQLBackup
 
             reader.ReadToFollowing("pgDumpPath");
             pgDumpPath = reader.ReadElementContentAsString();
-            dbnames = reader.ReadElementContentAsString();
+            reader.ReadToFollowing("backupFolderPath");
+            backupFolderPath = reader.ReadElementContentAsString();
+            reader.ReadToFollowing("dbName");
+            dbname = reader.ReadElementContentAsString();
+            reader.ReadToFollowing("host");
             host = reader.ReadElementContentAsString();
+            reader.ReadToFollowing("port");
             port = reader.ReadElementContentAsString();
+            reader.ReadToFollowing("user");
             user = reader.ReadElementContentAsString();
+            reader.ReadToFollowing("password");
             password = reader.ReadElementContentAsString();
 
             reader.Dispose();
         }
-        
+
         public void PostgreSqlDump(PgDump pgObj)
         {
             String dumpCommand = "\"" + pgObj.pgDumpPath + "\"" + " -Fc" + " -h " + pgObj.host + " -p " + pgObj.port + " -d " + pgObj.dbname + " -U " + pgObj.username + "";
@@ -191,14 +177,6 @@ namespace PostgreSQLBackup
 
                 if (File.Exists(passFilePath))
                     File.Delete(passFilePath);
-
-                Dispatcher.Invoke(new Action(() =>
-                {
-                    backupButton.IsEnabled = true;
-                    MessageBox.Show("Fisier " + pgObj.dbname + "backup" + " salvat cu succes!");
-                }));
-
-                //Thread.Sleep(1000 * 2);
             }
         }
 
