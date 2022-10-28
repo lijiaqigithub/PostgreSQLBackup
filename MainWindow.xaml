@@ -5,9 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PostgreSQLBackup"
         mc:Ignorable="d"
+        Visibility="Collapsed"
+        WindowStyle="None"
         Loaded="onLoad"
-        Title="Backup Postgre Database" Height="100" Width="100">
+        Title="Backup Postgre Database" Height="0" Width="0"
+        ResizeMode="NoResize" ShowInTaskbar="False">
     <Grid>
-        
+
     </Grid>
 </Window>

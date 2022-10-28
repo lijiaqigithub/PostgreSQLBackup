@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -14,6 +13,8 @@ namespace PostgreSQLBackup
     public partial class MainWindow : Window
     {
         private string xmlName = "settings";
+        private string directoryPath = string.Empty;
+        private string exePath = string.Empty;
 
         public static string pgDumpPath,
                              backupFolderPath,
@@ -32,18 +33,18 @@ namespace PostgreSQLBackup
 
         void onLoad(object sender, RoutedEventArgs e)
         {
-            var path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
-            path = path.Substring(6);
+            exePath = System.Reflection.Assembly.GetEntryAssembly().Location;
 
-            this.Visibility = Visibility.Collapsed;
-            if (File.Exists(path + "\\" + xmlName + ".xml"))
+            directoryPath = exePath.Substring(0, exePath.LastIndexOf('\\'));
+
+            if (File.Exists(directoryPath + "\\" + xmlName + ".xml"))
             {
                 Thread t = new Thread(new ThreadStart(AppThread));
                 t.Start();
             }
             else
             {
-                MessageBox.Show("Fisierul Setari.xml nu exista!");
+                MessageBox.Show("Fisierul settings.xml nu exista!");
                 return;
             }
         }
@@ -57,7 +58,10 @@ namespace PostgreSQLBackup
 
         private List<string> GetAllDatabaseNames(PgDump pgObject)
         {
-            var cs = "Host=" + pgObject.host + ";Username=" + pgObject.username +";Password="+ pgObject.password +";Database=" +pgObject.dbname;
+            var nameArray = new List<string>();
+
+
+            var cs = "Host=" + pgObject.host + ";Username=" + pgObject.username + ";Password=" + pgObject.password + ";Database=" + pgObject.dbname;
 
             var con = new NpgsqlConnection(cs);
             con.Open();
@@ -67,36 +71,52 @@ namespace PostgreSQLBackup
             var cmd = new NpgsqlCommand(sql, con);
 
             var names = cmd.ExecuteReader();
-            var nameArray = new List<string>();
-            while(names.Read())
+
+            while (names.Read())
             {
                 nameArray.Add(names[0].ToString());
             }
-            
+
+
             return nameArray;
         }
 
         private void ReadData()
         {
-            var path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
-            path = path.Substring(6);
+            var reader = XmlReader.Create(directoryPath + "\\" + xmlName + ".xml");
+            while (reader.Read())
+            {
+                if (reader.Name == "pgDumpPath")
+                {
+                    pgDumpPath = reader.ReadElementContentAsString();
+                }
+                if (reader.Name == "backupFolderPath")
+                {
+                    backupFolderPath = reader.ReadElementContentAsString();
+                }
+                if (reader.Name == "dbName")
+                {
+                    dbname = reader.ReadElementContentAsString();
+                }
+                if (reader.Name == "host")
+                {
+                    host = reader.ReadElementContentAsString();
+                }
+                if (reader.Name == "port")
+                {
+                    port = reader.ReadElementContentAsString();
+                }
+                if (reader.Name == "user")
+                {
+                    user = reader.ReadElementContentAsString();
+                }
+                if (reader.Name == "password")
+                {
+                    password = reader.ReadElementContentAsString();
+                }
 
-            var reader = XmlReader.Create(path + "\\" + xmlName + ".xml");
+            }
 
-            reader.ReadToFollowing("pgDumpPath");
-            pgDumpPath = reader.ReadElementContentAsString();
-            reader.ReadToFollowing("backupFolderPath");
-            backupFolderPath = reader.ReadElementContentAsString();
-            reader.ReadToFollowing("dbName");
-            dbname = reader.ReadElementContentAsString();
-            reader.ReadToFollowing("host");
-            host = reader.ReadElementContentAsString();
-            reader.ReadToFollowing("port");
-            port = reader.ReadElementContentAsString();
-            reader.ReadToFollowing("user");
-            user = reader.ReadElementContentAsString();
-            reader.ReadToFollowing("password");
-            password = reader.ReadElementContentAsString();
             reader.Dispose();
         }
 
@@ -110,9 +130,9 @@ namespace PostgreSQLBackup
             pgObject.port = port;
             pgObject.username = user;
 
-            if(string.IsNullOrEmpty(backupFolderPath))
+            if (string.IsNullOrEmpty(backupFolderPath))
             {
-                backupFolderPath = "C:\\Users\\" + Environment.UserName + "\\Documents\\Backups";
+                backupFolderPath = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.System)) + "Users\\" + Environment.UserName + "\\Documents\\Backups";
             }
 
             pgObject.path = backupFolderPath;
@@ -125,32 +145,34 @@ namespace PostgreSQLBackup
                 if (!Directory.Exists(pathString))
                 {
                     Directory.CreateDirectory(pathString);
-                }   
+                }
 
                 pgObject.dbname = name;
-                pgObject.path = backupFolderPath + "\\"+ name +"\\" + name + "_backup_" + System.DateTime.Now.Day + "_" + System.DateTime.Now.Month +
+                pgObject.path = backupFolderPath + "\\" + name + "\\" + name + "_backup_" + System.DateTime.Now.Day + "_" + System.DateTime.Now.Month +
                                 "_" + System.DateTime.Now.Year + "_" + System.DateTime.Now.Hour + "_" + System.DateTime.Now.Minute;
 
                 PostgreSqlDump(pgObject);
             }
+
+            EndProcess();
         }
 
         public void PostgreSqlDump(PgDump pgObj)
         {
-            String dumpCommand = "\"" + pgObj.pgDumpPath + "\"" + " -Fc" + " -h " + pgObj.host + " -p " + pgObj.port + " -d " + pgObj.dbname + " -U " + pgObj.username + "";
-            String passFileContent = "" + pgObj.host + ":" + pgObj.port + ":" + pgObj.dbname + ":" + pgObj.username + ":" + pgObj.password + "";
+            string dumpCommand = "\"" + pgObj.pgDumpPath + "\"" + " -Fc" + " -h " + pgObj.host + " -p " + pgObj.port + " -d " + pgObj.dbname + " -U " + pgObj.username + "";
+            string passFileContent = "" + pgObj.host + ":" + pgObj.port + ":" + pgObj.dbname + ":" + pgObj.username + ":" + pgObj.password + "";
 
-            String batFilePath = Path.Combine(
+            string batFilePath = Path.Combine(
                 Path.GetTempPath(),
                 Guid.NewGuid().ToString() + ".bat");
 
-            String passFilePath = Path.Combine(
+            string passFilePath = Path.Combine(
                 Path.GetTempPath(),
                 Guid.NewGuid().ToString() + ".conf");
 
             try
             {
-                String batchContent = "";
+                string batchContent = "";
                 batchContent += "@" + "set PGPASSFILE=" + passFilePath + "\n";
                 batchContent += "@" + dumpCommand + "  > " + "\"" + pgObj.path + "\"" + "\n";
 
@@ -177,9 +199,9 @@ namespace PostgreSQLBackup
                     proc.Close();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show("Eroare la crearea fisierului: " + ex.Message);
+                MessageBox.Show("Eroare la crearea fisierului pentru db: " + pgObj.dbname + " --error message:" + ex.Message);
             }
             finally
             {
@@ -188,61 +210,50 @@ namespace PostgreSQLBackup
 
                 if (File.Exists(passFilePath))
                     File.Delete(passFilePath);
-
-
-                var name = names.LastOrDefault();
-                if (pgObj.dbname == name)
-                {
-                    EndProcess("PostgreSQLBackup");
-                }
             }
         }
 
         public static string CMDWithResponse(string Comanda, string compiler = "cmd")
         {
-                string CMDcuRSP = "";
-                try
-                {
-                    Process myprocess = new Process();
-                    myprocess.StartInfo.FileName = compiler;
-                    myprocess.StartInfo.RedirectStandardInput = true;
-                    myprocess.StartInfo.RedirectStandardOutput = true;
-                    myprocess.StartInfo.UseShellExecute = false;
-                    myprocess.StartInfo.CreateNoWindow = true;
-                    myprocess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    myprocess.Start();
-                    System.IO.StreamReader SR = myprocess.StandardOutput;
-                    System.IO.StreamWriter SW = myprocess.StandardInput;
-                    SW.WriteLine(Comanda);
-                    SW.WriteLine("exit" + (char)(13));
-                    CMDcuRSP = (SR.ReadToEnd());
-                    SW.Close();
-                    SR.Close();
-                    myprocess.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    CMDcuRSP = "ERROR:" + ex.Message;
-                }
-                return CMDcuRSP;
+            string CMDcuRSP = "";
+            try
+            {
+                Process myprocess = new Process();
+                myprocess.StartInfo.FileName = compiler;
+                myprocess.StartInfo.RedirectStandardInput = true;
+                myprocess.StartInfo.RedirectStandardOutput = true;
+                myprocess.StartInfo.UseShellExecute = false;
+                myprocess.StartInfo.CreateNoWindow = true;
+                myprocess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                myprocess.Start();
+                System.IO.StreamReader SR = myprocess.StandardOutput;
+                System.IO.StreamWriter SW = myprocess.StandardInput;
+                SW.WriteLine(Comanda);
+                SW.WriteLine("exit" + (char)(13));
+                CMDcuRSP = (SR.ReadToEnd());
+                SW.Close();
+                SR.Close();
+                myprocess.Dispose();
+            }
+            catch (Exception ex)
+            {
+                CMDcuRSP = "ERROR:" + ex.Message;
+            }
+            return CMDcuRSP;
         }
-        
+
         public void TaskScheduler_Task()
         {
             string result = CMDWithResponse("schtasks /query");
-            if (!result.Contains("'BackupPostgre'"))
+            if (!result.Contains("BackupPostgre"))
             {
-                CMDWithResponse(@"schtasks /create /sc hourly /tn BackupPostgres /tr """ + System.Reflection.Assembly.GetEntryAssembly().Location+ " argument=nodesign\"");
+                CMDWithResponse(@"schtasks /create /sc DAILY /tn BackupPostgres /tr """ + exePath + "");
             }
         }
-        public void EndProcess(string process)
+        public void EndProcess()
         {
-            Process[] p = Process.GetProcessesByName(process);
-            if (p.Length >= 1)
-            {
-                Environment.Exit(0);
-            }
+            Environment.Exit(0);
         }
     }
 }
-        
+
